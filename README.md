@@ -28,3 +28,11 @@
 ```bash
 pip install requests beautifulsoup4 fastapi uvicorn
 uvicorn api:app --reload
+```
+
+## Docker 启动
+
+```bash
+docker build -t product-monitor .
+docker run --name product-monitor-app -p 8000:8000 product-monitor
+```
