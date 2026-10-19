@@ -1,0 +1,12 @@
+services:
+  api:
+    build: .
+    ports:
+      - "8002:8000"
+    volumes:
+      - product-data:/app/data
+
+volumes:
+  product-data:
+    external: true
+    name: product-monitor-data

@@ -22,6 +22,7 @@
 - 按价格范围筛选
 - 统计商品数量
 - 通过 API 手动触发采集
+- 注：sales 为练习占位字段，固定为 1，不代表真实销量。
 
 ## 启动方式
 
@@ -35,4 +36,27 @@ uvicorn api:app --reload
 ```bash
 docker build -t product-monitor .
 docker run --name product-monitor-app -p 8000:8000 product-monitor
+```
+
+## Docker Compose 启动
+
+首次部署时创建数据卷：
+
+```bash
+docker volume create product-monitor-data
+```
+
+构建并后台启动：
+
+```bash
+docker compose up -d --build
+```
+
+接口文档：http://127.0.0.1:8002/docs
+首次使用空数据卷时，请调用 POST /crawl 采集数据。
+
+停止并删除容器及项目网络，保留数据卷：
+
+```bash
+docker compose down
 ```

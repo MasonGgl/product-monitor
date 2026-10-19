@@ -2,7 +2,7 @@ import requests
 from bs4 import BeautifulSoup
 from urllib.parse import urljoin
 
-def fetch_books(url:str) -> list[dict]:
+def fetch_books(url:str) -> tuple[list[dict], str | None]:
     try:
         response = requests.get(
             url,
@@ -12,7 +12,7 @@ def fetch_books(url:str) -> list[dict]:
         response.raise_for_status()
     except requests.RequestException as e:
         print(f"请求失败：{e}")
-        return []
+        return [], None
 
     soup = BeautifulSoup(response.content, "html.parser")
     products = []
@@ -52,6 +52,6 @@ def fetch_all_books(start_url:str, max_page: int = 3) -> list[dict]:
 
 
 if __name__=="__main__":
-    books = fetch_books("https://books.toscrape.com/")
+    books = fetch_all_books("https://books.toscrape.com/", 6)
     print(f"采集到 {len(books)} 本书")
     print(books[:3])
