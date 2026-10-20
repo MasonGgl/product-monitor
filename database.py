@@ -5,7 +5,9 @@ DB_PATH = Path(__file__).parent / "data" / "products.db"
 
 def get_connection() -> sqlite3.Connection:
     DB_PATH.parent.mkdir(exist_ok=True)
-    return sqlite3.connect(DB_PATH)
+    conn = sqlite3.connect(DB_PATH)
+    conn.execute("PRAGMA foreign_keys = ON")
+    return conn
 
 def init_db() -> None:
     with get_connection() as conn:
@@ -18,6 +20,18 @@ def init_db() -> None:
                 sales INTEGER NOT NULL DEFAULT 1,
                 created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP
             )            """
+        )
+
+        conn.execute(
+            """
+            create table if not exists products_history (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                product_id INTEGER not null,
+                price REAL NOT NULL,
+                captured_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
+                FOREIGN KEY (product_id) REFERENCES products (id)
+            )
+            """
         )
 
 
@@ -37,6 +51,19 @@ def save_product(products: list[dict]) -> None:
                 for item in products
             ],
         )
+        for item in products:
+            row = conn.execute(
+                "select id from products where name= ? ",
+                (item["name"],),
+            ).fetchone()
+
+            conn.execute(
+                """
+                insert into products_history (product_id,price)
+                values (?,?)
+                """,
+                (row[0], item["price"]),
+            )
 
 def count_products() -> int:
     with get_connection() as conn:

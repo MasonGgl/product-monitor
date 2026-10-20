@@ -13,6 +13,11 @@ def product_to_dict(row) -> dict:
         "created_at": row[4],
     }
 
+def calculate_price_change(history: list[dict]) -> float | None:
+    if len(history) < 2:
+        return None
+    return round(history[0]["price"] - history[1]["price"],2)
+
 @app.on_event("startup")
 def startup() -> None:
     init_db()
@@ -111,3 +116,55 @@ def get_product(product_id: int) -> dict:
             )
         else:
             return product_to_dict(row)
+
+@app.get("/products/{product_id}/history")
+def get_product_history(product_id: int) -> list[dict]:
+    with get_connection() as conn:
+        rows = conn.execute(
+            """
+            SELECT price, captured_at
+            FROM products_history 
+            where product_id = ?
+            order by id DESC
+            """,
+            (product_id,),
+        ).fetchall()
+        return [
+            {
+                "price": row[0],
+                "captured_at": row[1],
+            }
+            for row in rows
+        ]
+
+@app.get("/products/{product_id}/price_change")
+def get_product_price_change(product_id: int) -> dict:
+    with get_connection() as conn:
+        product = conn.execute(
+            "select id,name from products where id = ?",
+            (product_id,),
+        ).fetchone()
+        if product is None:
+            raise HTTPException(
+                status_code=404,
+                detail="商品不存在"
+            )
+
+        rows = conn.execute(
+            """
+            select price, captured_at
+            FROM products_history 
+            where product_id = ?
+            order by id DESC
+            limit 2""",
+            (product_id,),
+        ).fetchall()
+
+        history = [{"price": row[0]} for row in rows]
+
+        return {
+            "success": True,
+            "product_id": product_id,
+            "name": product[1],
+            "price_change": calculate_price_change(history)
+        }
