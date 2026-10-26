@@ -80,21 +80,27 @@ def search_products(
 def crawl_books(
         max_pages: int = Query(default=1,ge=1, le=10)
 ) -> dict:
-    products = fetch_all_books(
+    products,successful_page,failed_page = fetch_all_books(
         "https://books.toscrape.com/",
         max_page=max_pages,
     )
-    if not products:
+    if products:
+        save_product(products)
+    if failed_page is not None:
         return {
             "success": False,
-            "message":"没有采集到商品",
-            "count": 0,
+            "message":f"第 {failed_page} 页采集失败,已保存前 {successful_page} 页的数据,",
+            "count": len(products),
+            "successful_page": successful_page,
+            "failed_page": failed_page,
+            "partial": bool(products)
         }
-    save_product(products)
     return {
-        "success": True,
-        "message":"采集并保存成功",
+        "success": bool(products),
+        "message": "采集并保存成功" if products else "没有采集到商品",
         "count": len(products),
+        "successful_page": successful_page,
+        "failed_page": failed_page,
     }
 
 @app.get("/products/price-drops")
