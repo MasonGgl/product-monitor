@@ -69,3 +69,43 @@ def count_products() -> int:
     with get_connection() as conn:
         row = conn.execute("SELECT COUNT(*) FROM products").fetchone()
         return row[0]
+
+
+def get_price_drops() -> list[dict]:
+    with get_connection() as conn:
+        rows = conn.execute(
+            """
+            with ranked as (
+                select 
+                    product_id,
+                    price,
+                    ROW_NUMBER() OVER(
+                        PARTITION BY product_id
+                        order by id DESC
+                    ) as rn
+                from products_history
+            )
+            select 
+                latest.product_id,
+                latest.price   as current_price,
+                previous.price as previous_price,
+                round(previous.price - latest.price, 2) as drop_amount,
+                p.name as name
+            from ranked as latest
+            join ranked as previous
+              on latest.product_id = previous.product_id
+                and previous.rn = 2
+            join products as p
+                 on (latest.product_id = p.id)
+            where latest.rn = 1
+              and latest.price < previous.price
+            """
+        ).fetchall()
+
+        return [{
+            "product_id": row[0],
+            "current_price":row[1],
+            "previous_price": row[2],
+            "drop_amount": row[3],
+            "name": row[4]
+        } for row in rows]

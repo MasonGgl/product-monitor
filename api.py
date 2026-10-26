@@ -1,5 +1,5 @@
 from fastapi import FastAPI,Query,HTTPException
-from database import get_connection, init_db
+from database import get_connection, init_db,get_price_drops
 from crawler import fetch_all_books
 from database import save_product
 app = FastAPI(title="商品监控系统")
@@ -97,6 +97,10 @@ def crawl_books(
         "count": len(products),
     }
 
+@app.get("/products/price-drops")
+def get_price_drops_api() -> list[dict]:
+    return get_price_drops()
+
 @app.get("/products/{product_id}")
 def get_product(product_id: int) -> dict:
     with get_connection() as conn:
@@ -168,3 +172,4 @@ def get_product_price_change(product_id: int) -> dict:
             "name": product[1],
             "price_change": calculate_price_change(history)
         }
+
