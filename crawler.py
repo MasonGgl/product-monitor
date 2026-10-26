@@ -1,18 +1,22 @@
-import requests
+import requests,time
 from bs4 import BeautifulSoup
 from urllib.parse import urljoin
 
 def fetch_books(url:str) -> tuple[list[dict], str | None, bool]:
-    try:
-        response = requests.get(
-            url,
-            headers={"User-Agent": "Mozilla/5.0"},
-            timeout=10,
-                                )
-        response.raise_for_status()
-    except requests.RequestException as e:
-        print(f"请求失败：{e}")
-        return [], None, False
+    for attempt  in range(1,4):
+        try:
+            response = requests.get(
+                url,
+                headers={"User-Agent": "Mozilla/5.0"},
+                timeout=10,
+                )
+            response.raise_for_status()
+            break
+        except requests.RequestException as e:
+            if attempt == 3:
+                print(f"请求失败，已重试 3 次：{e}")
+                return [], None, False
+            time.sleep(2)
 
     soup = BeautifulSoup(response.content, "html.parser")
     products = []
